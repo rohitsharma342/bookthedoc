@@ -18,7 +18,7 @@ class AppTheme {
       }),
       primaryColor: AppConstants.primaryColor,
       scaffoldBackgroundColor: AppConstants.backgroundColor,
-      cardColor: AppConstants.cardColor,
+      cardColor: Colors.white,
       fontFamily: 'San Francisco',
       textTheme: const TextTheme(
         headlineLarge: TextStyle(
@@ -63,7 +63,7 @@ class AppTheme {
         ),
       ),
       appBarTheme: const AppBarTheme(
-        backgroundColor: AppConstants.cardColor,
+        backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
         iconTheme: IconThemeData(color: AppConstants.textPrimary),
@@ -85,7 +85,7 @@ class AppTheme {
         ),
       ),
       cardTheme: CardThemeData(
-        color: AppConstants.cardColor,
+        color: Colors.white,
         elevation: 2,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
@@ -105,7 +105,7 @@ class AppTheme {
           borderSide: const BorderSide(color: AppConstants.primaryColor, width: 2),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        fillColor: AppConstants.cardColor,
+        fillColor: Colors.white,
         filled: true,
       ),
     );

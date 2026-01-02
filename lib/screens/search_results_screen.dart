@@ -149,55 +149,70 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
           Expanded(
             child: Consumer<DataService>(
               builder: (context, dataService, child) {
-                final filteredDoctors = dataService.getFilteredDoctors();
+                return FutureBuilder(
+                  future: dataService.getFilteredDoctors(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: Text('Error: ${snapshot.error}'),
+                      );
+                    }
+                    
+                    final filteredDoctors = snapshot.data ?? [];
 
-                if (filteredDoctors.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.search_off,
-                          size: 64,
-                          color: AppConstants.textSecondary.withOpacity(0.5),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No doctors found',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: AppConstants.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Try adjusting your search filters',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                return ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: filteredDoctors.length,
-                  itemBuilder: (context, index) {
-                    final doctor = filteredDoctors[index];
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: DoctorCard(
-                        doctor: doctor,
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => DoctorProfileScreen(
-                                doctorId: doctor.id,
+                    if (filteredDoctors.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.search_off,
+                              size: 64,
+                              color: AppConstants.textSecondary.withOpacity(0.5),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'No doctors found',
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                color: AppConstants.textSecondary,
                               ),
                             ),
-                          );
-                        },
-                      ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Try adjusting your search filters',
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    return ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: filteredDoctors.length,
+                      itemBuilder: (context, index) {
+                        final doctor = filteredDoctors[index];
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: DoctorCard(
+                            doctor: doctor,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => DoctorProfileScreen(
+                                    doctorId: doctor.id,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        );
+                      },
                     );
                   },
                 );

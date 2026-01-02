@@ -88,7 +88,8 @@ class SupabaseService {
       var query = _client.from(table).select();
       
       if (orderBy != null) {
-        query = query.order(orderBy, ascending: ascending);
+        final response = await query.order(orderBy, ascending: ascending);
+        return List<Map<String, dynamic>>.from(response);
       }
       
       final response = await query;
@@ -237,21 +238,22 @@ class SupabaseService {
         queryBuilder = queryBuilder.eq('specialty', specialty);
       }
       
+      List<Map<String, dynamic>> response;
+      
       switch (sortBy) {
         case 'rating':
-          queryBuilder = queryBuilder.order('rating', ascending: false);
+          response = await queryBuilder.order('rating', ascending: false);
           break;
         case 'price_low':
-          queryBuilder = queryBuilder.order('consultation_fee', ascending: true);
+          response = await queryBuilder.order('consultation_fee', ascending: true);
           break;
         case 'price_high':
-          queryBuilder = queryBuilder.order('consultation_fee', ascending: false);
+          response = await queryBuilder.order('consultation_fee', ascending: false);
           break;
         default:
-          queryBuilder = queryBuilder.order('rating', ascending: false);
+          response = await queryBuilder.order('rating', ascending: false);
       }
       
-      final response = await queryBuilder;
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       print('Error searching doctors: $e');

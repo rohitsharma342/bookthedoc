@@ -2,8 +2,11 @@ import 'package:flutter/foundation.dart';
 import '../models/doctor.dart';
 import '../models/appointment.dart';
 import '../models/user.dart';
+import 'supabase_service.dart';
 
 class DataService extends ChangeNotifier {
+  final SupabaseService _supabaseService = SupabaseService();
+  
   List<Doctor> _doctors = [];
   List<Appointment> _appointments = [];
   User? _currentUser;
@@ -11,6 +14,8 @@ class DataService extends ChangeNotifier {
   String _searchQuery = '';
   String _selectedSpecialty = '';
   String _sortBy = 'rating';
+  bool _isLoading = false;
+  String _error = '';
 
   List<Doctor> get doctors => _doctors;
   List<Appointment> get appointments => _appointments;
@@ -19,150 +24,93 @@ class DataService extends ChangeNotifier {
   String get searchQuery => _searchQuery;
   String get selectedSpecialty => _selectedSpecialty;
   String get sortBy => _sortBy;
+  bool get isLoading => _isLoading;
+  String get error => _error;
 
   DataService() {
     _initializeData();
   }
 
-  void _initializeData() {
-    _doctors = [
-      Doctor(
-        id: '1',
-        name: 'Dr. Sarah Johnson',
-        specialty: 'Cardiology',
-        qualification: 'MBBS, MD Cardiology',
-        rating: 4.8,
-        reviewCount: 156,
-        consultationFee: 150.0,
-        imageUrl: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=300&h=300&fit=crop',
-        location: 'New York, NY',
-        availableSlots: ['09:00 AM', '10:30 AM', '02:00 PM', '04:30 PM'],
-        about: 'Experienced cardiologist with over 15 years of practice.',
-        experience: 15,
-      ),
-      Doctor(
-        id: '2',
-        name: 'Dr. Michael Chen',
-        specialty: 'Dermatology',
-        qualification: 'MBBS, MD Dermatology',
-        rating: 4.7,
-        reviewCount: 89,
-        consultationFee: 120.0,
-        imageUrl: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=300&h=300&fit=crop',
-        location: 'Los Angeles, CA',
-        availableSlots: ['11:00 AM', '01:00 PM', '03:30 PM', '05:00 PM'],
-        about: 'Specialist in skin conditions and cosmetic dermatology.',
-        experience: 12,
-      ),
-      Doctor(
-        id: '3',
-        name: 'Dr. Emily Rodriguez',
-        specialty: 'Pediatrics',
-        qualification: 'MBBS, MD Pediatrics',
-        rating: 4.9,
-        reviewCount: 234,
-        consultationFee: 100.0,
-        imageUrl: 'https://images.unsplash.com/photo-1594824371259-91e21a8c7c04?w=300&h=300&fit=crop',
-        location: 'Chicago, IL',
-        availableSlots: ['08:30 AM', '10:00 AM', '01:30 PM', '03:00 PM'],
-        about: 'Dedicated pediatrician with expertise in child healthcare.',
-        experience: 10,
-      ),
-      Doctor(
-        id: '4',
-        name: 'Dr. David Wilson',
-        specialty: 'Neurology',
-        qualification: 'MBBS, DM Neurology',
-        rating: 4.6,
-        reviewCount: 112,
-        consultationFee: 200.0,
-        imageUrl: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=300&h=300&fit=crop',
-        location: 'Houston, TX',
-        availableSlots: ['09:30 AM', '11:30 AM', '02:30 PM', '04:00 PM'],
-        about: 'Neurologist specializing in brain and nervous system disorders.',
-        experience: 18,
-      ),
-      Doctor(
-        id: '5',
-        name: 'Dr. Lisa Thompson',
-        specialty: 'Orthopedics',
-        qualification: 'MBBS, MS Orthopedics',
-        rating: 4.5,
-        reviewCount: 67,
-        consultationFee: 180.0,
-        imageUrl: 'https://images.unsplash.com/photo-1582750433449-648ed127bb54?w=300&h=300&fit=crop',
-        location: 'Miami, FL',
-        availableSlots: ['08:00 AM', '10:30 AM', '01:00 PM', '03:30 PM'],
-        about: 'Orthopedic surgeon with expertise in joint replacements.',
-        experience: 14,
-      ),
-    ];
-
-    _appointments = [
-      Appointment(
-        id: 'apt1',
-        doctorId: '1',
-        doctorName: 'Dr. Sarah Johnson',
-        doctorSpecialty: 'Cardiology',
-        doctorImage: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=300&h=300&fit=crop',
-        dateTime: DateTime.now().add(const Duration(days: 2)),
-        status: AppointmentStatus.upcoming,
-        fee: 150.0,
-        type: 'In-person',
-      ),
-      Appointment(
-        id: 'apt2',
-        doctorId: '3',
-        doctorName: 'Dr. Emily Rodriguez',
-        doctorSpecialty: 'Pediatrics',
-        doctorImage: 'https://images.unsplash.com/photo-1594824371259-91e21a8c7c04?w=300&h=300&fit=crop',
-        dateTime: DateTime.now().add(const Duration(days: 5)),
-        status: AppointmentStatus.upcoming,
-        fee: 100.0,
-        type: 'Video Call',
-      ),
-    ];
-
-    _currentUser = User(
-      id: 'user1',
-      name: 'John Doe',
-      email: 'john.doe@email.com',
-      phone: '+1-555-0123',
-      profileImage: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop',
-      insurance: 'Blue Cross Blue Shield',
-      dateOfBirth: DateTime(1990, 5, 15),
-    );
-
-    _savedDoctors = [_doctors[0], _doctors[2]];
+  Future<void> _initializeData() async {
+    await fetchDoctors();
+    await fetchCurrentUser();
+    if (_currentUser != null) {
+      await fetchUserAppointments();
+      await fetchSavedDoctors();
+    }
   }
 
-  List<Doctor> getFilteredDoctors() {
-    List<Doctor> filtered = List.from(_doctors);
-
-    if (_searchQuery.isNotEmpty) {
-      filtered = filtered.where((doctor) {
-        return doctor.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-               doctor.specialty.toLowerCase().contains(_searchQuery.toLowerCase());
-      }).toList();
+  Future<void> fetchDoctors() async {
+    try {
+      _setLoading(true);
+      _setError('');
+      
+      final response = await _supabaseService.fetchData('doctors', orderBy: 'rating', ascending: false);
+      _doctors = response.map((json) => Doctor.fromJson(json)).toList();
+      
+      notifyListeners();
+    } catch (e) {
+      _setError('Failed to fetch doctors: $e');
+      print('Error fetching doctors: $e');
+    } finally {
+      _setLoading(false);
     }
+  }
 
-    if (_selectedSpecialty.isNotEmpty && _selectedSpecialty != 'All') {
-      filtered = filtered.where((doctor) => doctor.specialty == _selectedSpecialty).toList();
+  Future<void> fetchCurrentUser() async {
+    try {
+      final currentUser = _supabaseService.getCurrentUser();
+      if (currentUser != null) {
+        final userProfile = await _supabaseService.fetchById('user_profiles', currentUser.id);
+        if (userProfile != null) {
+          _currentUser = User.fromJson(userProfile);
+          notifyListeners();
+        }
+      }
+    } catch (e) {
+      print('Error fetching current user: $e');
     }
+  }
 
-    switch (_sortBy) {
-      case 'rating':
-        filtered.sort((a, b) => b.rating.compareTo(a.rating));
-        break;
-      case 'price_low':
-        filtered.sort((a, b) => a.consultationFee.compareTo(b.consultationFee));
-        break;
-      case 'price_high':
-        filtered.sort((a, b) => b.consultationFee.compareTo(a.consultationFee));
-        break;
+  Future<void> fetchUserAppointments() async {
+    if (_currentUser == null) return;
+    
+    try {
+      final response = await _supabaseService.fetchUserAppointments(_currentUser!.id);
+      _appointments = response.map((json) => Appointment.fromJson(json)).toList();
+      notifyListeners();
+    } catch (e) {
+      print('Error fetching appointments: $e');
     }
+  }
 
-    return filtered;
+  Future<void> fetchSavedDoctors() async {
+    if (_currentUser == null) return;
+    
+    try {
+      final response = await _supabaseService.fetchUserSavedDoctors(_currentUser!.id);
+      _savedDoctors = response
+          .map((json) => Doctor.fromJson(json['doctors']))
+          .toList();
+      notifyListeners();
+    } catch (e) {
+      print('Error fetching saved doctors: $e');
+    }
+  }
+
+  Future<List<Doctor>> getFilteredDoctors() async {
+    try {
+      final response = await _supabaseService.searchDoctors(
+        query: _searchQuery,
+        specialty: _selectedSpecialty,
+        sortBy: _sortBy,
+      );
+      
+      return response.map((json) => Doctor.fromJson(json)).toList();
+    } catch (e) {
+      print('Error filtering doctors: $e');
+      return [];
+    }
   }
 
   void setSearchQuery(String query) {
@@ -180,13 +128,35 @@ class DataService extends ChangeNotifier {
     notifyListeners();
   }
 
-  void toggleSaveDoctor(Doctor doctor) {
-    if (_savedDoctors.any((d) => d.id == doctor.id)) {
-      _savedDoctors.removeWhere((d) => d.id == doctor.id);
-    } else {
-      _savedDoctors.add(doctor);
+  Future<void> toggleSaveDoctor(Doctor doctor) async {
+    if (_currentUser == null) return;
+    
+    try {
+      final isCurrentlySaved = _savedDoctors.any((d) => d.id == doctor.id);
+      
+      if (isCurrentlySaved) {
+        // Remove from saved
+        await _supabaseService.client
+            .from('saved_doctors')
+            .delete()
+            .eq('user_id', _currentUser!.id)
+            .eq('doctor_id', doctor.id);
+        
+        _savedDoctors.removeWhere((d) => d.id == doctor.id);
+      } else {
+        // Add to saved
+        await _supabaseService.insertData('saved_doctors', {
+          'user_id': _currentUser!.id,
+          'doctor_id': doctor.id,
+        });
+        
+        _savedDoctors.add(doctor);
+      }
+      
+      notifyListeners();
+    } catch (e) {
+      print('Error toggling saved doctor: $e');
     }
-    notifyListeners();
   }
 
   bool isDoctorSaved(String doctorId) {
@@ -201,46 +171,55 @@ class DataService extends ChangeNotifier {
     }
   }
 
-  void bookAppointment(String doctorId, DateTime dateTime, String type) {
-    final doctor = getDoctorById(doctorId);
-    if (doctor != null) {
-      final appointment = Appointment(
-        id: 'apt${_appointments.length + 1}',
-        doctorId: doctorId,
-        doctorName: doctor.name,
-        doctorSpecialty: doctor.specialty,
-        doctorImage: doctor.imageUrl,
-        dateTime: dateTime,
-        status: AppointmentStatus.upcoming,
-        fee: doctor.consultationFee,
-        type: type,
-      );
-      _appointments.add(appointment);
-      notifyListeners();
+  Future<void> bookAppointment(String doctorId, DateTime dateTime, String type) async {
+    if (_currentUser == null) return;
+    
+    try {
+      final doctor = getDoctorById(doctorId);
+      if (doctor == null) return;
+      
+      final appointmentData = {
+        'user_id': _currentUser!.id,
+        'doctor_id': doctorId,
+        'doctor_name': doctor.name,
+        'doctor_specialty': doctor.specialty,
+        'doctor_image': doctor.imageUrl,
+        'date_time': dateTime.toIso8601String(),
+        'status': 'upcoming',
+        'fee': doctor.consultationFee,
+        'appointment_type': type,
+      };
+      
+      await _supabaseService.insertData('appointments', appointmentData);
+      await fetchUserAppointments();
+    } catch (e) {
+      print('Error booking appointment: $e');
+      rethrow;
     }
   }
 
-  void cancelAppointment(String appointmentId) {
-    final index = _appointments.indexWhere((apt) => apt.id == appointmentId);
-    if (index != -1) {
-      _appointments[index] = Appointment(
-        id: _appointments[index].id,
-        doctorId: _appointments[index].doctorId,
-        doctorName: _appointments[index].doctorName,
-        doctorSpecialty: _appointments[index].doctorSpecialty,
-        doctorImage: _appointments[index].doctorImage,
-        dateTime: _appointments[index].dateTime,
-        status: AppointmentStatus.cancelled,
-        fee: _appointments[index].fee,
-        type: _appointments[index].type,
-      );
-      notifyListeners();
+  Future<void> cancelAppointment(String appointmentId) async {
+    try {
+      await _supabaseService.updateData('appointments', appointmentId, {
+        'status': 'cancelled',
+      });
+      
+      await fetchUserAppointments();
+    } catch (e) {
+      print('Error cancelling appointment: $e');
+      rethrow;
     }
   }
 
-  void updateUser(User user) {
-    _currentUser = user;
-    notifyListeners();
+  Future<void> updateUser(User user) async {
+    try {
+      await _supabaseService.updateData('user_profiles', user.id, user.toJson());
+      _currentUser = user;
+      notifyListeners();
+    } catch (e) {
+      print('Error updating user: $e');
+      rethrow;
+    }
   }
 
   List<Appointment> getUpcomingAppointments() {
@@ -249,5 +228,19 @@ class DataService extends ChangeNotifier {
 
   List<Appointment> getPastAppointments() {
     return _appointments.where((apt) => apt.status != AppointmentStatus.upcoming).toList();
+  }
+
+  void _setLoading(bool loading) {
+    _isLoading = loading;
+    notifyListeners();
+  }
+
+  void _setError(String error) {
+    _error = error;
+    notifyListeners();
+  }
+
+  Future<void> refreshData() async {
+    await _initializeData();
   }
 }

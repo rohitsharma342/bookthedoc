@@ -40,54 +40,20 @@ class CustomBottomNav extends StatelessWidget {
           fontWeight: FontWeight.w400,
           fontSize: 12,
         ),
-        elevation: 0,
-        items: [
+        items: const [
           BottomNavigationBarItem(
-            icon: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: currentIndex == 0
-                    ? AppConstants.primaryColor.withOpacity(0.1)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                currentIndex == 0 ? Icons.home : Icons.home_outlined,
-                size: 24,
-              ),
-            ),
+            icon: Icon(Icons.home_outlined),
+            activeIcon: Icon(Icons.home),
             label: 'Home',
           ),
           BottomNavigationBarItem(
-            icon: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: currentIndex == 1
-                    ? AppConstants.primaryColor.withOpacity(0.1)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                currentIndex == 1 ? Icons.search : Icons.search_outlined,
-                size: 24,
-              ),
-            ),
+            icon: Icon(Icons.search_outlined),
+            activeIcon: Icon(Icons.search),
             label: 'Search',
           ),
           BottomNavigationBarItem(
-            icon: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: currentIndex == 2
-                    ? AppConstants.primaryColor.withOpacity(0.1)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                currentIndex == 2 ? Icons.person : Icons.person_outline,
-                size: 24,
-              ),
-            ),
+            icon: Icon(Icons.person_outlined),
+            activeIcon: Icon(Icons.person),
             label: 'Profile',
           ),
         ],

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../controllers/auth_controller.dart';
 import '../utils/constants.dart';
+import 'auth/login_screen.dart';
 import 'dashboard_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -16,41 +19,57 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void initState() {
     super.initState();
+    _setupAnimations();
+    _checkAuthStatus();
+  }
+
+  void _setupAnimations() {
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 2000),
       vsync: this,
     );
 
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: const Interval(0.0, 0.6, curve: Curves.easeIn),
-      ),
-    );
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: const Interval(0.0, 0.6, curve: Curves.easeIn),
+    ));
 
-    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: const Interval(0.4, 1.0, curve: Curves.elasticOut),
-      ),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 0.8,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: const Interval(0.2, 0.8, curve: Curves.elasticOut),
+    ));
 
     _animationController.forward();
+  }
 
-    Future.delayed(AppConstants.splashDuration, () {
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) => DashboardScreen(),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return FadeTransition(opacity: animation, child: child);
-            },
-            transitionDuration: const Duration(milliseconds: 800),
-          ),
-        );
-      }
-    });
+  Future<void> _checkAuthStatus() async {
+    await Future.delayed(const Duration(milliseconds: 2500));
+    
+    if (!mounted) return;
+    
+    final authController = context.read<AuthController>();
+    
+    if (authController.isAuthenticated) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => DashboardScreen(),
+        ),
+      );
+    } else {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => LoginScreen(),
+        ),
+      );
+    }
   }
 
   @override
@@ -62,7 +81,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppConstants.primaryColor,
       body: Center(
         child: AnimatedBuilder(
           animation: _animationController,
@@ -78,60 +97,49 @@ class _SplashScreenState extends State<SplashScreen>
                       width: 120,
                       height: 120,
                       decoration: BoxDecoration(
-                        color: AppConstants.primaryColor,
+                        color: Colors.white,
                         borderRadius: BorderRadius.circular(30),
                         boxShadow: [
                           BoxShadow(
-                            color: AppConstants.primaryColor.withOpacity(0.3),
-                            blurRadius: 20,
-                            offset: const Offset(0, 10),
+                            color: Colors.black.withOpacity(0.1),
+                            spreadRadius: 5,
+                            blurRadius: 15,
+                            offset: const Offset(0, 5),
                           ),
                         ],
                       ),
                       child: const Icon(
-                        Icons.medical_services,
+                        Icons.local_hospital,
                         size: 60,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-                    Text(
-                      AppConstants.appName,
-                      style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                         color: AppConstants.primaryColor,
+                      ),
+                    ),
+                    const SizedBox(height: 30),
+                    const Text(
+                      'BookTheDoc',
+                      style: TextStyle(
+                        fontSize: 32,
                         fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        letterSpacing: 1.2,
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    Text(
+                    const SizedBox(height: 10),
+                    const Text(
                       'Your Health, Our Priority',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: AppConstants.textSecondary,
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.white70,
+                        fontWeight: FontWeight.w300,
                       ),
                     ),
-                    const SizedBox(height: 80),
-                    SizedBox(
+                    const SizedBox(height: 50),
+                    const SizedBox(
                       width: 40,
                       height: 40,
                       child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          AppConstants.primaryColor,
-                        ),
                         strokeWidth: 3,
-                      ),
-                    ),
-                    const SizedBox(height: 100),
-                    Text(
-                      AppConstants.tagline,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppConstants.textSecondary.withOpacity(0.6),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '© 2024 BookTheDoc. All rights reserved.',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppConstants.textSecondary.withOpacity(0.4),
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
                     ),
                   ],
